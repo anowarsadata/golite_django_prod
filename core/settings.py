@@ -176,4 +176,4 @@ CORS_ALLOW_HEADERS = [
 ]
 
 
-# settings.py
+# settings.py cors
