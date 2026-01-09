@@ -39,6 +39,7 @@ DEBUG = True
 
 #ALLOWED_HOSTS = []
 ALLOWED_HOSTS = [
+    'goliteapi.golitemobile.com',
     '34.100.195.29',
     'localhost',
     '127.0.0.1',
@@ -174,6 +175,9 @@ CORS_ALLOW_HEADERS = [
     "authorization",
     "content-type",
 ]
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # settings.py cors
