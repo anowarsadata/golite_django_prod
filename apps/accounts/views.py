@@ -33,11 +33,16 @@ class RegisterAPI(APIView):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        # ✅ Backend base URL (localhost / prod / https safe)
-        backend_base_url = request.build_absolute_uri("/")[:-1]
+        # ✅ Get frontend origin from React request header (dynamic)
+        frontend_origin = request.headers.get(
+            "X-Frontend-Origin",
+            f"{request.scheme}://{request.get_host()}"  # fallback just in case
+        )
 
+        # 🔗 Verification link includes frontend_origin as query param
         verification_link = (
-            f"{backend_base_url}/api/accounts/verify/{uid}/{token}/"
+            f"{request.build_absolute_uri('/')[:-1]}/api/accounts/verify/{uid}/{token}/"
+            f"?frontend={frontend_origin}"
         )
 
         send_mail(
@@ -53,7 +58,6 @@ class RegisterAPI(APIView):
         })
 
 
-
 # ---------------- VERIFY EMAIL ----------------
 class VerifyEmailAPI(APIView):
     def get(self, request, uidb64, token):
@@ -66,15 +70,19 @@ class VerifyEmailAPI(APIView):
         if not default_token_generator.check_token(user, token):
             return Response({"error": "Invalid or expired token"}, status=400)
 
+        # ✅ Activate user
         user.is_active = True
         user.save()
 
-        frontend_origin = request.headers.get(
-            "X-Frontend-Origin",
-            f"{request.scheme}://{request.get_host()}"
+        # ✅ Read frontend origin from query param passed in verification link
+        frontend_origin = request.GET.get(
+            "frontend",
+            f"{request.scheme}://{request.get_host()}"  # fallback backend base URL
         )
 
+        # 🔗 Redirect to frontend login with verified flag
         return redirect(f"{frontend_origin}/login?verified=1")
+
 
 # ---------------- LOGIN ----------------
 class LoginAPI(APIView):
