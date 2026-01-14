@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -19,6 +18,7 @@ from .serializers import (
     UpdateUserSerializer
 )
 
+
 # ---------------- REGISTER ----------------
 class RegisterAPI(APIView):
     def post(self, request):
@@ -28,11 +28,13 @@ class RegisterAPI(APIView):
 
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        current_site = get_current_site(request).domain
 
-        verification_link = (
-            f"https://{current_site}/api/accounts/verify/{uid}/{token}/"
+        frontend_origin = request.headers.get(
+            "X-Frontend-Origin",
+            f"{request.scheme}://{request.get_host()}"
         )
+
+        verification_link = f"{frontend_origin}/verify-email/{uid}/{token}"
 
         send_mail(
             subject="Verify your email",
@@ -100,11 +102,10 @@ class DashboardAPI(APIView):
 
     def get(self, request):
         user = request.user
-        data = {
+        return Response({
             field.name: getattr(user, field.name)
             for field in user._meta.fields
-        }
-        return Response(data)
+        })
 
 
 # ---------------- FORGOT PASSWORD ----------------
@@ -118,15 +119,19 @@ class ForgotPasswordAPI(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"error": "Email not found"}, status=404)
+            return Response({
+                "message": "If the email exists, a reset link was sent."
+            })
 
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        current_site = get_current_site(request).domain
 
-        reset_link = (
-            f"https://{current_site}/api/accounts/reset-password/{uid}/{token}/"
+        frontend_origin = request.headers.get(
+            "X-Frontend-Origin",
+            f"{request.scheme}://{request.get_host()}"
         )
+
+        reset_link = f"{frontend_origin}/reset-password/{uid}/{token}"
 
         send_mail(
             subject="Reset your password",
@@ -137,7 +142,7 @@ class ForgotPasswordAPI(APIView):
         )
 
         return Response({
-            "message": "Password reset link sent to email"
+            "message": "Password reset link sent"
         })
 
 
@@ -166,10 +171,8 @@ class UpdateUserAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
-        user = request.user
-
         serializer = UpdateUserSerializer(
-            user,
+            request.user,
             data=request.data,
             partial=True,
             context={"request": request}
