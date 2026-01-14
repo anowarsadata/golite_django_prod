@@ -172,15 +172,23 @@ CORS_ALLOWED_ORIGINS = [
     "https://golitereact.vercel.app",
 ]
 
+#CORS_ALLOW_ALL_ORIGINS = True  # safe for now (you can restrict later)
+
 CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
     "authorization",
     "content-type",
-    "accept",
+    "dnt",
     "origin",
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+
+    # ✅ ADD THIS
+    "x-frontend-origin",
 ]
+
 
 CORS_ALLOW_METHODS = [
     "GET",
