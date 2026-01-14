@@ -7,8 +7,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.conf import settings
+from django.shortcuts import redirect
 
 from .serializers import (
     RegisterSerializer,
@@ -34,7 +36,7 @@ class RegisterAPI(APIView):
             f"{request.scheme}://{request.get_host()}"
         )
 
-        verification_link = f"{frontend_origin}/verify-email/{uid}/{token}"
+        verification_link = ( f"https://{current_site}/api/accounts/verify/{uid}/{token}/" )
 
         send_mail(
             subject="Verify your email",
@@ -58,12 +60,21 @@ class VerifyEmailAPI(APIView):
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return Response({"error": "Invalid link"}, status=400)
 
-        if default_token_generator.check_token(user, token):
-            user.is_active = True
-            user.save()
-            return Response({"message": "Email verified successfully"})
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Invalid or expired token"}, status=400)
 
-        return Response({"error": "Invalid or expired token"}, status=400)
+        # ✅ Activate user
+        user.is_active = True
+        user.save()
+
+        # ✅ Detect frontend dynamically
+        frontend_origin = request.headers.get(
+            "X-Frontend-Origin",
+            f"{request.scheme}://{request.get_host()}"
+        )
+
+        # ✅ Redirect to frontend login page with success flag
+        return redirect(f"{frontend_origin}/login?verified=1")
 
 
 # ---------------- LOGIN ----------------
