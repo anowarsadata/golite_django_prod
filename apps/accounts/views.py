@@ -26,17 +26,19 @@ class RegisterAPI(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+
+        # 🔒 User inactive until email verified
+        user = serializer.save(is_active=False)
 
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        frontend_origin = request.headers.get(
-            "X-Frontend-Origin",
-            f"{request.scheme}://{request.get_host()}"
-        )
+        # ✅ Backend base URL (localhost / prod / https safe)
+        backend_base_url = request.build_absolute_uri("/")[:-1]
 
-        verification_link = ( f"https://{current_site}/api/accounts/verify/{uid}/{token}/" )
+        verification_link = (
+            f"{backend_base_url}/api/accounts/verify/{uid}/{token}/"
+        )
 
         send_mail(
             subject="Verify your email",
@@ -51,6 +53,7 @@ class RegisterAPI(APIView):
         })
 
 
+
 # ---------------- VERIFY EMAIL ----------------
 class VerifyEmailAPI(APIView):
     def get(self, request, uidb64, token):
@@ -63,19 +66,15 @@ class VerifyEmailAPI(APIView):
         if not default_token_generator.check_token(user, token):
             return Response({"error": "Invalid or expired token"}, status=400)
 
-        # ✅ Activate user
         user.is_active = True
         user.save()
 
-        # ✅ Detect frontend dynamically
         frontend_origin = request.headers.get(
             "X-Frontend-Origin",
             f"{request.scheme}://{request.get_host()}"
         )
 
-        # ✅ Redirect to frontend login page with success flag
         return redirect(f"{frontend_origin}/login?verified=1")
-
 
 # ---------------- LOGIN ----------------
 class LoginAPI(APIView):
