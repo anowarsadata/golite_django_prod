@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Plan, PlanFeature
+from .models import Plan, PlanFeature, PlanCategory
 
 
 class PlanFeatureSerializer(serializers.ModelSerializer):
@@ -8,10 +8,53 @@ class PlanFeatureSerializer(serializers.ModelSerializer):
         fields = ("id", "title")
 
 
+class PlanCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlanCategory
+        fields = ("id", "name", "slug")
+
+
 class PlanSerializer(serializers.ModelSerializer):
     features = PlanFeatureSerializer(many=True, read_only=True)
-    final_price = serializers.DecimalField(max_digits=8, decimal_places=2)
+    category = PlanCategorySerializer(read_only=True)
+    final_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Plan
-        fields = "__all__"
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "short_description",
+            "description",
+
+            "price",
+            "sale_price",
+            "final_price",
+            "duration_days",
+            "sim_type",
+
+            # SEO
+            "meta_title",
+            "meta_description",
+            "meta_keywords",
+            "canonical_url",
+            "og_title",
+            "og_description",
+            "og_image",
+            "og_type",
+            "twitter_title",
+            "twitter_description",
+            "twitter_image",
+            "schema_markup",
+
+            "is_popular",
+            "is_active",
+            "created_at",
+
+            "category",
+            "features",
+        )
+
+    def get_final_price(self, obj):
+        return obj.sale_price or obj.price

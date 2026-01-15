@@ -27,7 +27,7 @@ class PlanCategory(models.Model):
 
 class Plan(models.Model):
     SIM_TYPE_CHOICES = (
-        ("psim", "Physical SIM"),
+        ("psim", "pSIM"),
         ("esim", "eSIM"),
     )
 
