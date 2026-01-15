@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Plan, PlanFeature
+from .models import Plan, PlanFeature, PlanCategory
+
+
+@admin.register(PlanCategory)
+class PlanCategoryAdmin(admin.ModelAdmin):
+    search_fields = ("name",)
+    prepopulated_fields = {"slug": ("name",)}
 
 
 class PlanFeatureInline(admin.TabularInline):
@@ -10,53 +16,75 @@ class PlanFeatureInline(admin.TabularInline):
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
     list_display = (
-        'name',
-        'price',
-        'sale_price',
-        'final_price',
-        'sim_type',
-        'is_popular',
-        'is_active',
+        "name",
+        "category",
+        "final_price",
+        "sim_type",
+        "is_active",
     )
-    list_filter = ('sim_type', 'is_active', 'is_popular')
-    search_fields = ('name', 'short_description', 'description')
+    list_filter = ("category", "sim_type", "is_active")
+    search_fields = ("name", "short_description")
 
-    fieldsets = (
-        ('Basic Info', {
-            'fields': ('name', 'slug', 'short_description', 'description')
-        }),
-        ('Pricing', {
-            'fields': ('price', 'sale_price', 'duration_days', 'sim_type')
-        }),
-        ('SEO – Meta', {
-            'fields': (
-                'meta_title',
-                'meta_description',
-                'meta_keywords',
-                'canonical_url'
-            )
-        }),
-        ('SEO – Open Graph', {
-            'fields': (
-                'og_title',
-                'og_description',
-                'og_image',
-                'og_type'
-            )
-        }),
-        ('SEO – Twitter', {
-            'fields': (
-                'twitter_title',
-                'twitter_description',
-                'twitter_image'
-            )
-        }),
-        ('SEO – Schema', {
-            'fields': ('schema_markup',)
-        }),
-        ('Status', {
-            'fields': ('is_popular', 'is_active')
-        }),
-    )
-
+    autocomplete_fields = ("category",)
+    prepopulated_fields = {"slug": ("name",)}
     inlines = [PlanFeatureInline]
+
+    tabs = (
+        ("Plan Details", {
+            "fieldsets": (
+                ("Basic Info", {
+                    "fields": (
+                        "category",
+                        "name",
+                        "slug",
+                        "short_description",
+                        "description",
+                    )
+                }),
+                ("Pricing", {
+                    "fields": (
+                        "price",
+                        "sale_price",
+                        "duration_days",
+                        "sim_type",
+                    )
+                }),
+                ("Status", {
+                    "fields": ("is_popular", "is_active")
+                }),
+            )
+        }),
+        ("SEO", {
+            "fieldsets": (
+                ("Meta", {
+                    "fields": (
+                        "meta_title",
+                        "meta_description",
+                        "meta_keywords",
+                        "canonical_url",
+                    )
+                }),
+                ("Open Graph", {
+                    "fields": (
+                        "og_title",
+                        "og_description",
+                        "og_image",
+                        "og_type",
+                    )
+                }),
+                ("Twitter", {
+                    "fields": (
+                        "twitter_title",
+                        "twitter_description",
+                        "twitter_image",
+                    )
+                }),
+                ("Schema", {
+                    "fields": ("schema_markup",)
+                }),
+            )
+        }),
+    )
+
+    class Media:
+        js = ("plans/plan_autofill.js",)

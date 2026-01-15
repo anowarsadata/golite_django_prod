@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'apps.products',
     'apps.accounts',
     'apps.plans',
+    'apps.coupons',
     'django_ckeditor_5',
     'rest_framework',
     'rest_framework.authtoken',
