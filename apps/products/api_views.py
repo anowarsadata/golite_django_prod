@@ -1,13 +1,67 @@
-from rest_framework import generics
-from apps.products.models import Product
-from .serializers import ProductSerializer
+from rest_framework import generics, filters
+from rest_framework.viewsets import ReadOnlyModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
 
-class ProductListAPI(generics.ListCreateAPIView):
-    queryset = Product.objects.all().order_by('-id')
+from .models import Product, ProductCategory
+from .serializers import ProductSerializer, ProductCategorySerializer
+from .filters import ProductFilter
+
+
+# -----------------------------
+# Product List
+# -----------------------------
+class ProductListAPIView(generics.ListAPIView):
+    queryset = (
+        Product.objects
+        .select_related('category')
+        .prefetch_related('variants', 'images')
+        .all()
+    )
     serializer_class = ProductSerializer
 
 
-class ProductDetailAPI(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Product.objects.all()
+# -----------------------------
+# Product Detail
+# -----------------------------
+class ProductDetailAPIView(generics.RetrieveAPIView):
+    queryset = (
+        Product.objects
+        .select_related('category')
+        .prefetch_related('variants', 'images')
+        .all()
+    )
     serializer_class = ProductSerializer
     lookup_field = 'slug'
+
+
+# -----------------------------
+# Category List
+# -----------------------------
+class CategoryListAPIView(generics.ListAPIView):
+    queryset = ProductCategory.objects.filter(is_active=True)
+    serializer_class = ProductCategorySerializer
+
+
+# -----------------------------
+# Product Filter API
+# -----------------------------
+# Product ViewSet (Optional)
+# -----------------------------
+class ProductViewSet(ReadOnlyModelViewSet):
+    queryset = (
+        Product.objects
+        .select_related('category')
+        .prefetch_related('variants', 'images')
+        .all()
+    )
+    serializer_class = ProductSerializer
+
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_class = ProductFilter
+    search_fields = ['name']
+    ordering_fields = ['price', 'created_at']
+    ordering = ['-created_at']

@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -164,8 +165,13 @@ CKEDITOR_5_CONFIGS = {
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
-    ]
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+    ],
 }
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
