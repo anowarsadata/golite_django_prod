@@ -178,6 +178,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "https://golitereact.vercel.app",
     "https://react.golitemobile.com",
+    "https://lakhan-golite.vercel.app",
 ]
 
 #CORS_ALLOW_ALL_ORIGINS = True  # safe for now (you can restrict later)
