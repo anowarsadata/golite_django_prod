@@ -24,6 +24,7 @@ class PlanSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "name",
+            "vcPlanID",
             "slug",
             "short_description",
             "description",
