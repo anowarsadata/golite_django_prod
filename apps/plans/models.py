@@ -40,6 +40,14 @@ class Plan(models.Model):
     )
 
     name = models.CharField(max_length=150)
+
+    vcPlanID = models.CharField(          # ✅ NEW FIELD
+        max_length=100,
+        unique=True,
+        blank=True,
+        null=True
+    )
+    
     slug = models.SlugField(unique=True, blank=True)
 
     short_description = models.TextField(
