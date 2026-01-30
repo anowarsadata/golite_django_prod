@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'apps.plans',
     'apps.coupons',
     'apps.student_discount',
+    'apps.first_responder',
     'django_ckeditor_5',
     'rest_framework',
     'rest_framework.authtoken',
