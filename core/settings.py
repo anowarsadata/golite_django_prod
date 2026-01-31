@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'apps.first_responder',
     'apps.military_discount',
     'apps.marine_discount',
+    'apps.senior_discount',
     'django_ckeditor_5',
     'rest_framework',
     'rest_framework.authtoken',
