@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/students/", include("apps.student_discount.urls")),
     path("api/responder/", include("apps.first_responder.urls")),
     path("api/military-discount/", include('apps.military_discount.urls')),
+    path("api/marine-discount/",include("apps.marine_discount.urls")),
 
     
     path('api/v1/', include('apps.coupons.urls')),
