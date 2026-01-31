@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'apps.student_discount',
     'apps.first_responder',
     'apps.military_discount',
+    'apps.marine_discount',
     'django_ckeditor_5',
     'rest_framework',
     'rest_framework.authtoken',
