@@ -72,13 +72,45 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 # ---------------- UPDATE PROFILE ----------------
+# class UpdateUserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ["username", "email", "first_name", "last_name"]
+
+#     def validate_email(self, value):
+#         user = self.context['request'].user
+#         if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+#             raise serializers.ValidationError("Email already in use")
+#         return value
+
+# serializers.py
 class UpdateUserSerializer(serializers.ModelSerializer):
+    vc_enrollment_id = serializers.CharField(
+        source='profile.vc_enrollment_id',  # points to profile model
+        required=False,
+        allow_blank=True
+    )
+
     class Meta:
         model = User
-        fields = ["username", "email", "first_name", "last_name"]
+        fields = ["username", "email", "first_name", "last_name", "vc_enrollment_id"]
 
     def validate_email(self, value):
         user = self.context['request'].user
         if User.objects.exclude(pk=user.pk).filter(email=value).exists():
             raise serializers.ValidationError("Email already in use")
         return value
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        vc_id = profile_data.get('vc_enrollment_id')
+
+        # Update User fields
+        instance = super().update(instance, validated_data)
+
+        # Update VC ID if provided
+        if vc_id is not None:
+            instance.profile.vc_enrollment_id = vc_id
+            instance.profile.save()
+
+        return instance
