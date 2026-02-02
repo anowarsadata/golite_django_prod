@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.conf import settings
 from django.shortcuts import redirect
@@ -27,34 +26,32 @@ class RegisterAPI(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # 🔒 User inactive until email verified
         user = serializer.save(is_active=False)
 
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        # ✅ Get frontend origin from React request header (dynamic)
         frontend_origin = request.headers.get(
             "X-Frontend-Origin",
-            f"{request.scheme}://{request.get_host()}"  # fallback just in case
+            f"{request.scheme}://{request.get_host()}"
         )
 
-        # 🔗 Verification link includes frontend_origin as query param
         verification_link = (
-            f"{request.build_absolute_uri('/')[:-1]}/api/accounts/verify/{uid}/{token}/"
+            f"{request.build_absolute_uri('/')[:-1]}"
+            f"/api/accounts/verify/{uid}/{token}/"
             f"?frontend={frontend_origin}"
         )
 
         send_mail(
             subject="Verify your email",
-            message=f"Click the link below to verify your email:\n\n{verification_link}",
+            message=f"Click link:\n{verification_link}",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=False,
         )
 
         return Response({
-            "message": "User registered successfully. Check your email for verification."
+            "message": "Registered successfully. Check email for verification."
         })
 
 
@@ -64,24 +61,21 @@ class VerifyEmailAPI(APIView):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        except:
             return Response({"error": "Invalid link"}, status=400)
 
         if not default_token_generator.check_token(user, token):
             return Response({"error": "Invalid or expired token"}, status=400)
 
-        # ✅ Activate user
         user.is_active = True
         user.save()
 
-        # ✅ Read frontend origin from query param passed in verification link
-        frontend_origin = request.GET.get(
+        frontend = request.GET.get(
             "frontend",
-            f"{request.scheme}://{request.get_host()}"  # fallback backend base URL
+            f"{request.scheme}://{request.get_host()}"
         )
 
-        # 🔗 Redirect to frontend login with verified flag
-        return redirect(f"{frontend_origin}/login?verified=1")
+        return redirect(f"{frontend}/login?verified=1")
 
 
 # ---------------- LOGIN ----------------
@@ -93,15 +87,17 @@ class LoginAPI(APIView):
         user = serializer.validated_data
         token, _ = Token.objects.get_or_create(user=user)
 
-        user_data = {
-            field.name: getattr(user, field.name)
-            for field in user._meta.fields
-        }
-
         return Response({
             "message": "Login successful",
             "token": token.key,
-            "user": user_data
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "vc_enrollment_id": getattr(user.profile, "vc_enrollment_id", None)
+            }
         })
 
 
@@ -111,7 +107,7 @@ class LogoutAPI(APIView):
 
     def post(self, request):
         request.user.auth_token.delete()
-        return Response({"message": "Logged out successfully"})
+        return Response({"message": "Logged out"})
 
 
 # ---------------- DASHBOARD ----------------
@@ -121,8 +117,12 @@ class DashboardAPI(APIView):
     def get(self, request):
         user = request.user
         return Response({
-            field.name: getattr(user, field.name)
-            for field in user._meta.fields
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "vc_enrollment_id": getattr(user.profile, "vc_enrollment_id", None)
         })
 
 
@@ -137,31 +137,27 @@ class ForgotPasswordAPI(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({
-                "message": "If the email exists, a reset link was sent."
-            })
+            return Response({"message": "If email exists, reset link sent"})
 
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        frontend_origin = request.headers.get(
+        frontend = request.headers.get(
             "X-Frontend-Origin",
             f"{request.scheme}://{request.get_host()}"
         )
 
-        reset_link = f"{frontend_origin}/reset-password/{uid}/{token}"
+        reset_link = f"{frontend}/reset-password/{uid}/{token}"
 
         send_mail(
-            subject="Reset your password",
-            message=f"Click the link below to reset your password:\n\n{reset_link}",
+            subject="Reset Password",
+            message=f"Click link:\n{reset_link}",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=False,
         )
 
-        return Response({
-            "message": "Password reset link sent"
-        })
+        return Response({"message": "Reset link sent"})
 
 
 # ---------------- RESET PASSWORD ----------------
@@ -173,7 +169,7 @@ class ResetPasswordAPI(APIView):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        except:
             return Response({"error": "Invalid link"}, status=400)
 
         if default_token_generator.check_token(user, token):
@@ -200,6 +196,9 @@ class UpdateUserAPI(APIView):
         serializer.save()
 
         return Response({
-            "message": "Profile updated successfully",
-            "user": serializer.data
+            "message": "Profile updated",
+            "user": {
+                **serializer.data,
+                "vc_enrollment_id": getattr(request.user.profile, "vc_enrollment_id", None)
+            }
         })
