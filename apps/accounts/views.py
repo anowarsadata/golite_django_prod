@@ -85,6 +85,26 @@ class VerifyEmailAPI(APIView):
 
 
 # ---------------- LOGIN ----------------
+# class LoginAPI(APIView):
+#     def post(self, request):
+#         serializer = LoginSerializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+
+#         user = serializer.validated_data
+#         token, _ = Token.objects.get_or_create(user=user)
+
+#         user_data = {
+#             field.name: getattr(user, field.name)
+#             for field in user._meta.fields
+#         }
+
+#         return Response({
+#             "message": "Login successful",
+#             "token": token.key,
+#             "user": user_data
+#         })
+
+# views.py
 class LoginAPI(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -97,6 +117,9 @@ class LoginAPI(APIView):
             field.name: getattr(user, field.name)
             for field in user._meta.fields
         }
+
+        # Add VC ID
+        user_data['vc_enrollment_id'] = getattr(user.profile, 'vc_enrollment_id', None)
 
         return Response({
             "message": "Login successful",
@@ -185,6 +208,26 @@ class ResetPasswordAPI(APIView):
 
 
 # ---------------- UPDATE PROFILE ----------------
+# class UpdateUserAPI(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def put(self, request):
+#         serializer = UpdateUserSerializer(
+#             request.user,
+#             data=request.data,
+#             partial=True,
+#             context={"request": request}
+#         )
+
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+
+#         return Response({
+#             "message": "Profile updated successfully",
+#             "user": serializer.data
+#         })
+
+
 class UpdateUserAPI(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -199,7 +242,12 @@ class UpdateUserAPI(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
+        # Include vc_enrollment_id in response
+        response_data = serializer.data
+        response_data['vc_enrollment_id'] = getattr(request.user.profile, 'vc_enrollment_id', None)
+
         return Response({
             "message": "Profile updated successfully",
-            "user": serializer.data
+            "user": response_data
         })
+
