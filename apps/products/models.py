@@ -21,11 +21,9 @@ class ProductCategory(models.Model):
 
 
 class Product(models.Model):
-    category = models.ForeignKey(
+    categories = models.ManyToManyField(
         ProductCategory,
         related_name="products",
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True
     )
     name = models.CharField(max_length=255)

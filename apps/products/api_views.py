@@ -13,8 +13,7 @@ from .filters import ProductFilter
 class ProductListAPIView(generics.ListAPIView):
     queryset = (
         Product.objects
-        .select_related('category')
-        .prefetch_related('variants', 'images')
+        .prefetch_related('categories', 'variants', 'images')
         .all()
     )
     serializer_class = ProductSerializer
@@ -26,8 +25,7 @@ class ProductListAPIView(generics.ListAPIView):
 class ProductDetailAPIView(generics.RetrieveAPIView):
     queryset = (
         Product.objects
-        .select_related('category')
-        .prefetch_related('variants', 'images')
+        .prefetch_related('categories', 'variants', 'images')
         .all()
     )
     serializer_class = ProductSerializer
@@ -43,15 +41,12 @@ class CategoryListAPIView(generics.ListAPIView):
 
 
 # -----------------------------
-# Product Filter API
-# -----------------------------
-# Product ViewSet (Optional)
+# Product ViewSet (Filter / Search / Ordering)
 # -----------------------------
 class ProductViewSet(ReadOnlyModelViewSet):
     queryset = (
         Product.objects
-        .select_related('category')
-        .prefetch_related('variants', 'images')
+        .prefetch_related('categories', 'variants', 'images')
         .all()
     )
     serializer_class = ProductSerializer
@@ -62,6 +57,6 @@ class ProductViewSet(ReadOnlyModelViewSet):
         filters.OrderingFilter,
     ]
     filterset_class = ProductFilter
-    search_fields = ['name']
+    search_fields = ['name', 'categories__name']
     ordering_fields = ['price', 'created_at']
     ordering = ['-created_at']

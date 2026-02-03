@@ -4,7 +4,7 @@ from .models import Product
 
 class ProductFilter(django_filters.FilterSet):
     category = django_filters.CharFilter(
-        field_name='category__slug',
+        field_name='categories__slug',   # ✅ changed
         lookup_expr='iexact'
     )
 
