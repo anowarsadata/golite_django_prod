@@ -251,3 +251,45 @@ class UpdateUserAPI(APIView):
             "user": response_data
         })
 
+
+# ---------------- SOCIAL LOGIN / REGISTER ----------------
+class SocialUserAPI(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        first_name = request.data.get("first_name", "")
+        last_name = request.data.get("last_name", "")
+
+        if not email:
+            return Response({"error": "Email is required"}, status=400)
+
+        # ✅ Check if user exists
+        user = User.objects.filter(email=email).first()
+
+        if not user:
+            # Create user without password
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=True  # Social users auto verified
+            )
+            user.set_unusable_password()
+            user.save()
+
+        # ✅ Create or get token
+        token, _ = Token.objects.get_or_create(user=user)
+
+        user_data = {
+            field.name: getattr(user, field.name)
+            for field in user._meta.fields
+        }
+
+        # Add VC ID (same as login)
+        user_data['vc_enrollment_id'] = getattr(user.profile, 'vc_enrollment_id', None)
+
+        return Response({
+            "message": "Social login successful",
+            "token": token.key,
+            "user": user_data
+        })
