@@ -186,6 +186,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://golitereact.vercel.app",
     "https://react.golitemobile.com",
     "https://lakhan-golite.vercel.app",
+    "https://golitemobile.com",
 ]
 
 #CORS_ALLOW_ALL_ORIGINS = True  # safe for now (you can restrict later)
