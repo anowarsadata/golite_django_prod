@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from apps.plans.models import Plan
 
 
@@ -10,6 +11,17 @@ class Coupon(models.Model):
     TYPE_CHOICES = [
         (FLAT, "Flat"),
         (PERCENTAGE, "Percentage"),
+    ]
+
+    # ✅ STATUS
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    EXPIRED = "expired"
+
+    STATUS_CHOICES = [
+        (ACTIVE, "Active"),
+        (INACTIVE, "Inactive"),
+        (EXPIRED, "Expired"),
     ]
 
     id = models.BigAutoField(primary_key=True)
@@ -46,14 +58,43 @@ class Coupon(models.Model):
         help_text="Leave empty = valid for all plans"
     )
 
-    created_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
+    # 🔥 NEW FIELDS
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=ACTIVE
+    )
+
+    valid_from = models.DateTimeField(null=True, blank=True)
+    valid_till = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "coupons"
 
     def __str__(self):
         return self.name
+
+    # ✅ CENTRAL VALIDATION METHOD
+    def is_valid(self):
+        now = timezone.now()
+
+        if self.status != self.ACTIVE:
+            return False, "Coupon is inactive"
+
+        if self.valid_from and now < self.valid_from:
+            return False, "Coupon not active yet"
+
+        if self.valid_till and now > self.valid_till:
+            return False, "Coupon expired"
+
+        if self.limit is not None and self.used_count >= self.limit:
+            return False, "Coupon usage limit reached"
+
+        return True, "Coupon is valid"
+
 
 class CouponUsage(models.Model):
     coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
