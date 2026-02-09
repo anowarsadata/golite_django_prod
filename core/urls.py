@@ -22,9 +22,10 @@ urlpatterns = [
     path("api/senior-discount/", include("apps.senior_discount.urls")),
     path("api/v2/order/", include("apps.orders.urls")),
 
+    path("api/v1/", include("apps.coupons.api_urls")),
 
     
-    path('api/v1/', include('apps.coupons.urls')),
+    #path('api/v1/', include('apps.coupons.urls')),
 ]
 
 if settings.DEBUG:
